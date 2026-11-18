@@ -1,0 +1,24 @@
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Python / Django
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+.pytest_cache/
+.coverage
+staticfiles/
+
+# Editor / OS / Workspace artifacts
+.vscode/
+.idea/
+.gemini/
+.antigravity/
+GEMINI.md
+.DS_Store
+Thumbs.db

@@ -1,0 +1,239 @@
+{% extends "sms_app/base.html" %}
+{% load tz %}
+
+{% block content %}
+<!-- Summary Statistics Row -->
+<section class="stats-grid" aria-label="SMS Attempt Statistics">
+    <article class="stat-card" id="stat-card-total">
+        <span class="stat-label">Total Attempts</span>
+        <strong class="stat-value" id="stat-total-attempts">{{ total_attempts }}</strong>
+        <span class="stat-caption">Recorded sending attempts</span>
+    </article>
+
+    <article class="stat-card" id="stat-card-submitted">
+        <span class="stat-label">Submitted</span>
+        <strong class="stat-value stat-value-submitted" id="stat-submitted-count">{{ submitted_count }}</strong>
+        <span class="stat-caption">Accepted / queued by TextBee</span>
+    </article>
+
+    <article class="stat-card" id="stat-card-failed">
+        <span class="stat-label">Failed</span>
+        <strong class="stat-value stat-value-failed" id="stat-failed-count">{{ failed_count }}</strong>
+        <span class="stat-caption">Rejected or unsuccessful</span>
+    </article>
+</section>
+
+<!-- Main Two-Column Workspace -->
+<div class="workspace-grid">
+    <!-- Left Panel: Compose SMS -->
+    <section class="card compose-card" aria-labelledby="compose-heading">
+        <div class="card-header">
+            <h2 id="compose-heading">Compose SMS</h2>
+            <p class="lead">
+                Enter an international E.164 phone number (such as <code>+639171234567</code>) and your message below.
+            </p>
+        </div>
+
+        {% if sms_result %}
+            {% if sms_result.status_category == 'delivered' %}
+            <div class="alert alert-success" role="status" aria-live="polite" id="provider-status-banner">
+                <div class="alert-header">
+                    <strong>Delivery Confirmed</strong>
+                    <span class="status-pill status-pill-delivered">{{ sms_result.status_label }}</span>
+                </div>
+                <p>{{ sms_result.user_message }}</p>
+                {% if sms_result.message_id %}
+                <p class="alert-meta">Batch ID (<code>smsBatchId</code>): <code>{{ sms_result.message_id }}</code></p>
+                {% endif %}
+            </div>
+            {% elif sms_result.status_category == 'submitted' %}
+            <div class="alert alert-info" role="status" aria-live="polite" id="provider-status-banner">
+                <div class="alert-header">
+                    <strong>Queued on TextBee Gateway</strong>
+                    <span class="status-pill status-pill-submitted">{{ sms_result.status_label }}</span>
+                </div>
+                <p>{{ sms_result.user_message }}</p>
+                {% if sms_result.message_id %}
+                <p class="alert-meta">Batch ID (<code>smsBatchId</code>): <code>{{ sms_result.message_id }}</code></p>
+                {% endif %}
+            </div>
+            {% elif sms_result.status_category == 'duplicate' %}
+            <div class="alert alert-warning" role="alert" aria-live="assertive" id="provider-status-banner">
+                <div class="alert-header">
+                    <strong>Duplicate Submission Prevented</strong>
+                    <span class="status-pill status-pill-warning">{{ sms_result.status_label }}</span>
+                </div>
+                <p>{{ sms_result.user_message }}</p>
+            </div>
+            {% else %}
+            <div class="alert alert-error" role="alert" aria-live="assertive" id="provider-status-banner">
+                <div class="alert-header">
+                    <strong>SMS Submission Failed</strong>
+                    <span class="status-pill status-pill-failed">{{ sms_result.status_label }}</span>
+                </div>
+                <p>{{ sms_result.user_message }}</p>
+            </div>
+            {% endif %}
+        {% endif %}
+
+        {% if history_save_warning %}
+        <div class="alert alert-warning" role="alert" aria-live="assertive" id="history-warning-banner">
+            <div class="alert-header">
+                <strong>History Save Warning</strong>
+                <span class="status-pill status-pill-warning">Database Warning</span>
+            </div>
+            <p>{{ history_save_warning }}</p>
+        </div>
+        {% endif %}
+
+        {% if form.errors %}
+        <div class="alert alert-error" role="alert" aria-live="assertive" id="error-summary">
+            <strong>Please correct the highlighted errors below before continuing.</strong>
+            {% if form.non_field_errors %}
+            <ul class="error-list">
+                {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'sms_app:index' %}" novalidate id="sms-compose-form">
+            {% csrf_token %}
+
+            <!-- Recipient Phone Number Field -->
+            <div class="form-group {% if form.recipient.errors %}has-error{% endif %}">
+                <label for="{{ form.recipient.id_for_label }}" class="form-label">
+                    {{ form.recipient.label }} <span class="required-indicator" aria-hidden="true">*</span>
+                </label>
+                {{ form.recipient }}
+                <p id="recipient-help" class="field-hint">
+                    Use international E.164 format starting with <code>+</code> and country code (e.g., <code>+639171234567</code>).
+                </p>
+                {% if form.recipient.errors %}
+                <ul class="field-errors" id="recipient-errors" role="alert">
+                    {% for error in form.recipient.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+
+            <!-- Message Textarea Field -->
+            <div class="form-group {% if form.message.errors %}has-error{% endif %}">
+                <div class="label-row">
+                    <label for="{{ form.message.id_for_label }}" class="form-label">
+                        {{ form.message.label }} <span class="required-indicator" aria-hidden="true">*</span>
+                    </label>
+                    <span id="message-counter" class="char-counter" aria-live="polite">
+                        <span id="char-count-current">{{ form.message.value|default_if_none:""|length }}</span> / <span id="char-count-max">{{ max_message_length }}</span> characters
+                    </span>
+                </div>
+                {{ form.message }}
+                <p class="field-hint">
+                    Maximum allowed length: {{ max_message_length }} characters.
+                </p>
+                {% if form.message.errors %}
+                <ul class="field-errors" id="message-errors" role="alert">
+                    {% for error in form.message.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary" id="send-sms-btn">
+                    Send SMS
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <!-- Right Panel: Live Message Preview -->
+    <aside class="card preview-card" aria-labelledby="preview-heading">
+        <div class="card-header">
+            <h2 id="preview-heading">Live Message Preview</h2>
+            <p class="lead">Real-time preview of your current message draft.</p>
+        </div>
+
+        <div class="phone-mockup" id="message-preview">
+            <div class="phone-header">
+                <span class="phone-label">To:</span>
+                <span class="phone-recipient" id="preview-recipient">{{ form.recipient.value|default_if_none:""|default:"No recipient entered" }}</span>
+            </div>
+
+            <div class="phone-body">
+                <div class="message-bubble {% if not form.message.value %}is-placeholder{% endif %}" id="preview-message">{% if form.message.value %}{{ form.message.value }}{% else %}Your message preview will appear here as you type...{% endif %}</div>
+            </div>
+
+            <div class="phone-footer">
+                <span id="preview-char-status">{{ form.message.value|default_if_none:""|length }} of {{ max_message_length }} characters used</span>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<!-- Full-Width Recent Messages Section -->
+<section class="card history-card" aria-labelledby="history-heading" id="recent-messages-section">
+    <div class="history-header">
+        <div>
+            <h2 id="history-heading">Recent Messages</h2>
+            <p class="lead">Latest {{ recent_logs|length }} recorded SMS sending attempts (recipients masked for privacy).</p>
+        </div>
+    </div>
+
+    {% if recent_logs %}
+    <div class="table-responsive">
+        <table class="history-table" id="recent-messages-table">
+            <thead>
+                <tr>
+                    <th scope="col">Recipient</th>
+                    <th scope="col">Message Excerpt</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Batch ID</th>
+                    <th scope="col">Timestamp (PHT)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% timezone "Asia/Manila" %}
+                {% for log in recent_logs %}
+                <tr>
+                    <td class="cell-recipient" data-label="Recipient">
+                        <code>{{ log.recipient_masked }}</code>
+                    </td>
+                    <td class="cell-excerpt" data-label="Message Excerpt">
+                        {{ log.message_excerpt }}
+                    </td>
+                    <td class="cell-status" data-label="Status">
+                        <span class="status-pill status-pill-{{ log.badge_variant }}">
+                            {{ log.status_label }}
+                        </span>
+                    </td>
+                    <td class="cell-batch" data-label="Batch ID">
+                        {% if log.sms_batch_id %}
+                        <code>{{ log.sms_batch_id }}</code>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="cell-timestamp" data-label="Timestamp (PHT)">
+                        {{ log.created_at|date:"M j, Y, g:i A" }}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% endtimezone %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state" id="history-empty-state">
+        <p class="empty-state-title">No SMS attempts recorded yet</p>
+        <p class="empty-state-text">
+            Submitted and failed sending attempts will appear here automatically once you send a message.
+        </p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

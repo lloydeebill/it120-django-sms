@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SMS Connect — Messaging Workspace{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'sms_app/styles.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <div class="brand-group">
+                <h1 class="site-title">SMS Connect</h1>
+                <p class="site-subtitle">Messaging Workspace</p>
+            </div>
+            {% if gateway_configured %}
+            <span class="gateway-indicator is-configured" id="gateway-indicator">
+                <span class="indicator-dot" aria-hidden="true"></span>
+                TextBee Gateway Configured
+            </span>
+            {% else %}
+            <span class="gateway-indicator is-unconfigured" id="gateway-indicator">
+                <span class="indicator-dot" aria-hidden="true"></span>
+                Gateway Setup Required
+            </span>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="container main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <p>IT 120 Group Assignment — Lloyd Bill Lariosa, Ivy Tabada, Junalea Mhae Gallogo</p>
+            <p class="footer-note">Local demonstration prototype. Do not deploy publicly without authentication controls.</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'sms_app/app.js' %}" defer></script>
+</body>
+</html>
