@@ -17,8 +17,5 @@ staticfiles/
 # Editor / OS / Workspace artifacts
 .vscode/
 .idea/
-.gemini/
-.antigravity/
-GEMINI.md
 .DS_Store
 Thumbs.db

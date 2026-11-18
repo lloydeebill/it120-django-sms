@@ -78,11 +78,7 @@ django-sms/
 ├── .gitignore                   # Excludes .env, .venv/, __pycache__/, and *.sqlite3
 ├── manage.py                    # Django management entry point
 ├── README.md                    # Complete project documentation and test report
-├── REQUIREMENTS.md              # Tracked assignment requirements and acceptance criteria
 ├── requirements.txt             # Pinned Python package dependencies
-├── TASKS.md                     # Milestone implementation and verification checklist
-├── reference/
-│   └── Django_Group Assignment.pdf
 ├── sms_project/
 │   ├── __init__.py
 │   ├── asgi.py
